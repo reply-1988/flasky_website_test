@@ -17,10 +17,6 @@ def index():
             session['known'] = False
         else:
             session['known'] = True
-        # 两次输入数据的提醒
-        old_name = session.get('name')
-        if old_name is not None and old_name != form.name.data:
-            flash("你似乎改变了你的名字啊=。=")
         session['name'] = form.name.data
         form.name.data = ''
         return redirect(url_for('.index'))
