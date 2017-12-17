@@ -154,4 +154,3 @@ def change_email(token):
         flash('无效的请求')
     return redirect(url_for('main.index'))
 
-
