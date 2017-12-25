@@ -6,7 +6,7 @@ class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
     FLASKY_MAIL_SENDER = '1271997525@qq.com'
-    FLASKY_ADMIN = '1271997525@qq.com'
+    FLASKY_ADMIN = 'diding1997@qq.com'
 
     @staticmethod
     def init_app(app):
