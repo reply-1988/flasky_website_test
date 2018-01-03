@@ -1,3 +1,4 @@
+from flask_pagedown.fields import PageDownField
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, BooleanField, SelectField
 from wtforms.validators import DataRequired, Length, Email, ValidationError
@@ -39,4 +40,9 @@ class EditProfileAdminForm(FlaskForm):
         if field.data != self.user.username and \
                 User.query.filter_by(username=field.data).first():
             raise ValidationError('该用户名已经被占用了')
+
+class PostForm(FlaskForm):
+    body = PageDownField('您想的是什么啊？', validators=[DataRequired()])
+    submit = SubmitField('提交')
+
 

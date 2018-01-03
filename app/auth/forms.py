@@ -1,5 +1,6 @@
+from flask_pagedown.fields import PageDownField
 from flask_wtf import Form
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Length, Email, Regexp, EqualTo
 from wtforms import ValidationError
 from ..modles import User
@@ -62,3 +63,9 @@ class ResetEmailForm(Form):
     def validate_email(self, field):
         if User.query.filter_by(email=field.data).first():
             raise ValidationError('这个电子邮箱地址已经存在了。')
+
+# 博客文章表单
+class PostForm(Form):
+    body = PageDownField('你想写的是什么？', validators=[DataRequired()])
+    submit = SubmitField('提交')
+
