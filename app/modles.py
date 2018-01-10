@@ -28,8 +28,8 @@ class Role(db.Model):
     @staticmethod
     def insert_roles():
         roles = {
-            'User': (Permission.FOLLOW | Permission.COMMIT | Permission.WRITE_ARTICLES, True),
-            'Moderator': (Permission.FOLLOW | Permission.COMMIT | Permission.WRITE_ARTICLES
+            'User': (Permission.FOLLOW | Permission.COMMENT | Permission.WRITE_ARTICLES, True),
+            'Moderator': (Permission.FOLLOW | Permission.COMMENT | Permission.WRITE_ARTICLES
                           | Permission.MODERATE_COMMENTS, False),
             'Administrator': (0xff, False)
         }
@@ -46,6 +46,8 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
+    def has_permission(self, perm):
+        return self.permissions and perm == perm
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -71,6 +73,8 @@ class User(UserMixin, db.Model):
                                backref=db.backref('followed', lazy='joined'),
                                 lazy='dynamic',
                                 cascade='all, delete-orphan')
+    comments = db.relationship('Comment', backref='author', lazy='dynamic')
+
 
     @property
     def password(self):
@@ -143,7 +147,7 @@ class User(UserMixin, db.Model):
         return True
 
     def can(self, permission):
-        return self.role is not None and (self.role.permissions & permission) == permission
+        return self.role is not None and self.role.has_permission(permission)
 
     def is_administrator(self):
         return self.can(Permission.ADMINISTER)
@@ -234,6 +238,7 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     body_html = db.Column(db.Text)
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
 
     @staticmethod
     def generate_fake(count=100):
@@ -263,10 +268,10 @@ db.event.listen(Post.body, 'set', Post.on_changed_body)
 class Permission:
 
     FOLLOW = 0x01
-    COMMIT = 0x02
-    WRITE_ARTICLES=0x04
-    MODERATE_COMMENTS=0x08
-    ADMINISTER=0x80
+    COMMENT = 0x02
+    WRITE_ARTICLES = 0x04
+    MODERATE_COMMENTS = 0x08
+    ADMINISTER = 0x80
 
 
 class AnonymousUser(AnonymousUserMixin):
@@ -276,6 +281,25 @@ class AnonymousUser(AnonymousUserMixin):
 
     def is_administrator(self):
         return False
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    disabled = db.Column(db.Boolean)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'code', 'em', 'i', 'strong']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format='html'),
+            tags=allowed_tags, strip=True))
+
+db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 
 
 login_manager.anonymous_user = AnonymousUser
